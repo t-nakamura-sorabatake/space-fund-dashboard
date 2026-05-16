@@ -510,7 +510,7 @@ function renderKPIs(arr) {
   const indep = arr.filter(d => d.type === '独立法人等').length;
 
   const kpis = [
-    { label: '採択件数', value: total, delta: `ユニーク機関数 ${uniqueOrgs}` },
+    { label: '採択件数（採択なし1件含む）', value: total, delta: `ユニーク機関数（採択なし1件含む） ${uniqueOrgs}` },
     { label: '民間企業', value: corporate.length, delta: `${total ? (corporate.length/total*100).toFixed(0) : 0}%` },
     { label: '大学', value: universities, delta: `${total ? (universities/total*100).toFixed(0) : 0}%` },
     { label: '独立法人等', value: indep, delta: `${total ? (indep/total*100).toFixed(0) : 0}%` },
