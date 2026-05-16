@@ -105,8 +105,7 @@ footer a { color: var(--accent); text-decoration: none; }
 <div class="container">
   <header>
     <h1><span class="accent-bar"></span>宇宙戦略基金 採択結果ダッシュボード</h1>
-    <div class="subtitle">採択機関の上場区分・参画歴・分野・担当省などをインタラクティブに可視化</div>
-    <div class="source">データ出典: <a href="https://fund.jaxa.jp/" target="_blank" rel="noopener">JAXA 宇宙戦略基金 公式サイト</a></div>
+    <div class="subtitle">採択機関の上場区分・参画歴（もともと宇宙開発に関わっていたら既存、新規参入の場合は新規）・分野・担当省などを可視化してみました</div>
   </header>
 
   <div class="filters" id="filters">
@@ -140,7 +139,7 @@ footer a { color: var(--accent); text-decoration: none; }
     </div>
 
     <div class="card col-6">
-      <h3>分野別の採択件数</h3>
+      <h3>分野別の採択件数（民間企業）</h3>
       <div class="desc">上場区分との積み上げ</div>
       <div class="chart-wrap"><canvas id="chartField"></canvas></div>
     </div>
@@ -157,12 +156,12 @@ footer a { color: var(--accent); text-decoration: none; }
     </div>
 
     <div class="card col-6">
-      <h3>分野 × 参画歴のクロス集計</h3>
+      <h3>分野 × 参画歴のクロス集計（民間企業）</h3>
       <div class="desc">民間企業のみ</div>
       <div class="chart-wrap"><canvas id="chartFieldHistory"></canvas></div>
     </div>
     <div class="card col-6">
-      <h3>分野 × 上場区分のクロス集計</h3>
+      <h3>分野 × 上場区分のクロス集計（民間企業）</h3>
       <div class="desc">民間企業のみ</div>
       <div class="chart-wrap"><canvas id="chartFieldListing"></canvas></div>
     </div>
