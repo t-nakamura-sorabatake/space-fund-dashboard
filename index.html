@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>宇宙戦略基金 採択結果ダッシュボード</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f5fbfc;
+  --bg-card: #ffffff;
+  --bg-card-2: #f8fcfd;
+  --text: #1f2a37;
+  --text-dim: #6b7a90;
+  --border: #d9e7ea;
+  --accent: #00b5c5;        /* 宙畑ティール */
+  --accent-2: #008a98;
+  --accent-soft: #e6f7f9;
+  --yellow: #ffd93d;        /* 宙畑イエロー */
+  --yellow-soft: #fff5cc;
+  --success: #2ec495;
+  --warn: #f7a83f;
+  --danger: #ee5a87;
+  --purple: #7c5bff;
+  --chip: #eef6f7;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif; }
+body { min-height: 100vh; background:
+  radial-gradient(900px 500px at 100% -10%, rgba(255, 217, 61, 0.12) 0%, transparent 60%),
+  radial-gradient(1000px 600px at -10% 10%, rgba(0, 181, 197, 0.10) 0%, transparent 60%),
+  var(--bg);
+}
+.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+header { padding: 16px 0 8px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: 0.02em; color: var(--text); }
+h1 .accent-bar { display: inline-block; width: 6px; height: 22px; background: var(--accent); border-radius: 3px; margin-right: 10px; vertical-align: -3px; }
+.subtitle { color: var(--text-dim); font-size: 14px; margin-bottom: 8px; }
+.source { color: var(--text-dim); font-size: 12px; }
+.source a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.source a:hover { text-decoration: underline; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 18px 0; }
+.kpi { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15, 50, 70, 0.04); position: relative; overflow: hidden; }
+.kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent); }
+.kpi:nth-child(5n)::before { background: var(--yellow); }
+.kpi:nth-child(3n)::before { background: var(--purple); }
+.kpi .label { color: var(--text-dim); font-size: 12px; }
+.kpi .value { font-size: 28px; font-weight: 700; margin-top: 4px; color: var(--text); }
+.kpi .delta { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 18px; }
+.filter-group { display: flex; align-items: center; gap: 6px; background: var(--bg-card); border: 1px solid var(--border); padding: 6px 12px; border-radius: 999px; font-size: 13px; box-shadow: 0 1px 2px rgba(15, 50, 70, 0.03); }
+.filter-group label { color: var(--text-dim); font-size: 12px; }
+.filter-group select { background: transparent; border: none; color: var(--text); font-size: 13px; outline: none; cursor: pointer; }
+.filter-group select option { background: #ffffff; color: var(--text); }
+.reset-btn { background: var(--accent); color: #ffffff; border: 1px solid var(--accent); border-radius: 999px; padding: 6px 14px; font-size: 12px; cursor: pointer; font-weight: 600; }
+.reset-btn:hover { background: var(--accent-2); border-color: var(--accent-2); }
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15, 50, 70, 0.04); }
+.card h3 { margin: 0 0 10px; font-size: 14px; color: var(--text); font-weight: 700; letter-spacing: 0.02em; border-left: 4px solid var(--accent); padding-left: 10px; }
+.card .desc { color: var(--text-dim); font-size: 11px; margin-bottom: 10px; padding-left: 14px; }
+.col-3 { grid-column: span 3; }
+.col-4 { grid-column: span 4; }
+.col-6 { grid-column: span 6; }
+.col-8 { grid-column: span 8; }
+.col-12 { grid-column: span 12; }
+@media (max-width: 1024px) {
+  .col-3, .col-4 { grid-column: span 6; }
+  .col-6, .col-8 { grid-column: span 12; }
+}
+@media (max-width: 640px) {
+  .col-3, .col-4, .col-6, .col-8 { grid-column: span 12; }
+  h1 { font-size: 20px; }
+}
+.chart-wrap { position: relative; height: 280px; }
+.chart-wrap.tall { height: 360px; }
+.chart-wrap.short { height: 220px; }
+.legend-note { color: var(--text-dim); font-size: 11px; margin-top: 6px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th, td { border-bottom: 1px solid var(--border); padding: 8px 6px; text-align: left; vertical-align: top; color: var(--text); }
+th { color: var(--text-dim); font-weight: 700; cursor: pointer; user-select: none; position: sticky; top: 0; background: var(--bg-soft); border-bottom: 2px solid var(--accent); }
+th:hover { color: var(--accent); }
+tbody tr:hover { background: var(--accent-soft); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; border: 1px solid transparent; }
+.b-listed { background: rgba(46, 196, 149, 0.12); color: #1f8a68; border-color: rgba(46, 196, 149, 0.3); }
+.b-unlisted { background: rgba(247, 168, 63, 0.15); color: #c47616; border-color: rgba(247, 168, 63, 0.35); }
+.b-su { background: rgba(238, 90, 135, 0.12); color: #c83366; border-color: rgba(238, 90, 135, 0.3); }
+.b-new { background: rgba(124, 91, 255, 0.12); color: #5c41cf; border-color: rgba(124, 91, 255, 0.3); }
+.b-existing { background: var(--accent-soft); color: var(--accent-2); border-color: rgba(0, 181, 197, 0.3); }
+.b-dash { background: var(--chip); color: var(--text-dim); }
+.table-wrap { max-height: 460px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; }
+.search-input { flex: 1; min-width: 200px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); font-size: 13px; outline: none; box-shadow: 0 1px 2px rgba(15, 50, 70, 0.03); }
+.search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.search-input::placeholder { color: var(--text-dim); }
+footer { text-align: center; color: var(--text-dim); font-size: 12px; padding: 24px 0 12px; border-top: 1px solid var(--border); margin-top: 20px; }
+footer a { color: var(--accent); text-decoration: none; }
+.pdf-link { color: var(--accent); text-decoration: none; font-size: 11px; font-weight: 600; }
+.pdf-link:hover { text-decoration: underline; color: var(--accent-2); }
+.no-data { color: var(--text-dim); text-align: center; padding: 40px 0; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1><span class="accent-bar"></span>宇宙戦略基金 採択結果ダッシュボード</h1>
+    <div class="subtitle">採択機関の上場区分・参画歴・分野・担当省などをインタラクティブに可視化</div>
+    <div class="source">データ出典: <a href="https://fund.jaxa.jp/" target="_blank" rel="noopener">JAXA 宇宙戦略基金 公式サイト</a></div>
+  </header>
+
+  <div class="filters" id="filters">
+    <input type="text" class="search-input" id="searchInput" placeholder="機関名・テーマで検索...">
+    <div class="filter-group"><label>期</label><select id="f-period"></select></div>
+    <div class="filter-group"><label>機関種別</label><select id="f-type"></select></div>
+    <div class="filter-group"><label>分野</label><select id="f-field"></select></div>
+    <div class="filter-group"><label>担当省</label><select id="f-ministry"></select></div>
+    <div class="filter-group"><label>上場区分</label><select id="f-listing"></select></div>
+    <div class="filter-group"><label>参画歴</label><select id="f-history"></select></div>
+    <button class="reset-btn" id="resetBtn">リセット</button>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+    <div class="card col-4">
+      <h3>機関種別の内訳</h3>
+      <div class="desc">民間企業 / 大学 / 独立法人等</div>
+      <div class="chart-wrap"><canvas id="chartType"></canvas></div>
+    </div>
+    <div class="card col-4">
+      <h3>上場区分 / 宇宙SU の割合（民間企業）</h3>
+      <div class="desc">民間企業に限定した内訳</div>
+      <div class="chart-wrap"><canvas id="chartListing"></canvas></div>
+    </div>
+    <div class="card col-4">
+      <h3>宇宙参画歴 新規 vs 既存（民間企業）</h3>
+      <div class="desc">民間企業に限定した内訳</div>
+      <div class="chart-wrap"><canvas id="chartHistory"></canvas></div>
+    </div>
+
+    <div class="card col-6">
+      <h3>分野別の採択件数</h3>
+      <div class="desc">上場区分との積み上げ</div>
+      <div class="chart-wrap"><canvas id="chartField"></canvas></div>
+    </div>
+    <div class="card col-6">
+      <h3>担当省別の採択件数</h3>
+      <div class="desc">分野との積み上げ</div>
+      <div class="chart-wrap"><canvas id="chartMinistry"></canvas></div>
+    </div>
+
+    <div class="card col-12">
+      <h3>採択日の時系列推移（月次）</h3>
+      <div class="desc">期ごとの累計と単月件数</div>
+      <div class="chart-wrap tall"><canvas id="chartTimeline"></canvas></div>
+    </div>
+
+    <div class="card col-6">
+      <h3>分野 × 参画歴のクロス集計</h3>
+      <div class="desc">民間企業のみ</div>
+      <div class="chart-wrap"><canvas id="chartFieldHistory"></canvas></div>
+    </div>
+    <div class="card col-6">
+      <h3>分野 × 上場区分のクロス集計</h3>
+      <div class="desc">民間企業のみ</div>
+      <div class="chart-wrap"><canvas id="chartFieldListing"></canvas></div>
+    </div>
+
+    <div class="card col-12">
+      <h3>採択回数の多い機関（TOP15）</h3>
+      <div class="desc">同一機関が複数テーマで採択されているケース</div>
+      <div class="chart-wrap tall"><canvas id="chartTopOrg"></canvas></div>
+    </div>
+
+    <div class="card col-12">
+      <h3>採択機関一覧</h3>
+      <div class="desc">列ヘッダクリックでソート / 上の検索・フィルタが反映されます</div>
+      <div class="table-wrap">
+        <table id="dataTable">
+          <thead>
+            <tr>
+              <th data-key="No.">No.</th>
+              <th data-key="実施機関名(代表機関)">機関名</th>
+              <th data-key="機関種別">種別</th>
+              <th data-key="宇宙参画歴">参画歴</th>
+              <th data-key="上場区分/宇宙SU">上場区分</th>
+              <th data-key="期">期</th>
+              <th data-key="分野">分野</th>
+              <th data-key="担当省">担当省</th>
+              <th data-key="技術開発テーマ名">テーマ</th>
+              <th data-key="採択日">採択日</th>
+              <th>PDF</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Built with Chart.js · データ件数: <span id="totalCount">-</span> 件 · 最終更新: <span id="lastDate">-</span>
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+// ============================
+// データロード & 整形
+// ============================
+const RAW = window.SPACE_FUND_DATA || [];
+const DATA = RAW.map(r => ({
+  no: r['No.'],
+  org: r['実施機関名(代表機関)'],
+  type: r['機関種別'],
+  history: r['宇宙参画歴'],
+  listing: r['上場区分/宇宙SU'],
+  period: r['期'],
+  field: r['分野'],
+  ministry: r['担当省'],
+  theme: r['技術開発テーマ 名'] || r['技術開発テーマ名'],
+  subtheme: r['サブテーマ/区分'],
+  topic: r['技術開発課題の名称'],
+  summary: r['技術開発課題の概要'],
+  pi: r['研究代表者'],
+  partners: r['連携機関'],
+  pdf: r['採択結果PDF'],
+  date: r['採択日'],
+}));
+
+// 宙畑カラーパレット
+const COLORS = {
+  primary: '#00b5c5',   // 宙畑ティール
+  primaryDark: '#008a98',
+  yellow:  '#ffd93d',   // 宙畑イエロー
+  purple:  '#7c5bff',
+  green:   '#2ec495',
+  orange:  '#f7a83f',
+  pink:    '#ee5a87',
+  navy:    '#1f4e8c',
+  gray:    '#9aa9bd',
+  sky:     '#5dc7e8',
+};
+const PALETTE = ['#00b5c5', '#ffd93d', '#7c5bff', '#2ec495', '#f7a83f', '#ee5a87', '#1f4e8c', '#5dc7e8', '#9aa9bd', '#008a98'];
+
+const LISTING_COLOR = {
+  '上場': COLORS.primary,
+  '非上場': COLORS.yellow,
+  '宇宙SU': COLORS.pink,
+  '-': COLORS.gray,
+};
+const HISTORY_COLOR = {
+  '新規': COLORS.purple,
+  '既存': COLORS.primary,
+  '-': COLORS.gray,
+};
+const FIELD_COLOR = {
+  '宇宙輸送': COLORS.primary,
+  '衛星等': COLORS.yellow,
+  '探査等': COLORS.purple,
+  '分野共通': COLORS.green,
+};
+
+if (window.ChartDataLabels) Chart.register(window.ChartDataLabels);
+Chart.defaults.color = '#1f2a37';
+Chart.defaults.borderColor = 'rgba(31, 42, 55, 0.08)';
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+Chart.defaults.plugins.legend.labels.boxWidth = 10;
+Chart.defaults.plugins.legend.labels.padding = 8;
+
+// ============================
+// フィルタ初期化
+// ============================
+const FILTER_KEYS = {
+  'f-period': 'period',
+  'f-type': 'type',
+  'f-field': 'field',
+  'f-ministry': 'ministry',
+  'f-listing': 'listing',
+  'f-history': 'history',
+};
+function uniqueValues(key) {
+  const set = new Set();
+  DATA.forEach(d => { if (d[key]) set.add(d[key]); });
+  return Array.from(set).sort();
+}
+Object.entries(FILTER_KEYS).forEach(([selId, key]) => {
+  const sel = document.getElementById(selId);
+  sel.innerHTML = '<option value="">すべて</option>' + uniqueValues(key).map(v => `<option value="${v}">${v}</option>`).join('');
+  sel.addEventListener('change', refresh);
+});
+document.getElementById('searchInput').addEventListener('input', refresh);
+document.getElementById('resetBtn').addEventListener('click', () => {
+  Object.keys(FILTER_KEYS).forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('searchInput').value = '';
+  refresh();
+});
+
+// ============================
+// フィルタロジック
+// ============================
+function getFiltered() {
+  const filters = {};
+  Object.entries(FILTER_KEYS).forEach(([id, k]) => { filters[k] = document.getElementById(id).value; });
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  return DATA.filter(d => {
+    for (const k of Object.keys(filters)) {
+      if (filters[k] && d[k] !== filters[k]) return false;
+    }
+    if (q) {
+      const hay = [d.org, d.theme, d.topic, d.subtheme, d.pi].filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+// ============================
+// 集計ユーティリティ
+// ============================
+function countBy(arr, key) {
+  const m = new Map();
+  arr.forEach(d => {
+    const v = d[key] || '-';
+    m.set(v, (m.get(v) || 0) + 1);
+  });
+  return m;
+}
+function crossTab(arr, rowKey, colKey) {
+  const result = {};
+  arr.forEach(d => {
+    const r = d[rowKey] || '-';
+    const c = d[colKey] || '-';
+    if (!result[r]) result[r] = {};
+    result[r][c] = (result[r][c] || 0) + 1;
+  });
+  return result;
+}
+
+// ============================
+// チャート生成
+// ============================
+const charts = {};
+
+function destroyAll() {
+  Object.values(charts).forEach(c => c && c.destroy());
+}
+
+function pieOptions(title) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom' },
+      tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed} 件 (${((ctx.parsed/ctx.dataset.data.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)` } },
+      datalabels: {
+        color: '#fff', font: { weight: 'bold', size: 11 },
+        formatter: (v, ctx) => {
+          const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
+          const pct = total ? (v/total*100) : 0;
+          return pct >= 5 ? pct.toFixed(0) + '%' : '';
+        }
+      }
+    }
+  };
+}
+
+function barOptions(stacked=false, horizontal=false) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    indexAxis: horizontal ? 'y' : 'x',
+    scales: {
+      x: { stacked, grid: { color: 'rgba(31, 42, 55, 0.06)' }, ticks: { color: '#4a5568' }, beginAtZero: true },
+      y: { stacked, grid: { color: 'rgba(31, 42, 55, 0.06)' }, ticks: { color: '#4a5568' }, beginAtZero: true },
+    },
+    plugins: {
+      legend: { position: 'bottom' },
+      tooltip: { callbacks: { label: ctx => `${ctx.dataset.label || ctx.label}: ${ctx.parsed[horizontal ? 'x' : 'y']} 件` } },
+      datalabels: { display: false }
+    }
+  };
+}
+
+function renderPie(canvasId, mapObj, colorMap) {
+  const labels = [...mapObj.keys()];
+  const values = [...mapObj.values()];
+  const colors = labels.map((l, i) => (colorMap && colorMap[l]) || PALETTE[i % PALETTE.length]);
+  const ctx = document.getElementById(canvasId);
+  charts[canvasId] = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: '#ffffff', borderWidth: 2 }] },
+    options: pieOptions()
+  });
+}
+
+function renderStackedBar(canvasId, rows, cols, dataObj, colorMap, horizontal=false) {
+  const datasets = cols.map((c, i) => ({
+    label: c,
+    data: rows.map(r => (dataObj[r] && dataObj[r][c]) || 0),
+    backgroundColor: (colorMap && colorMap[c]) || PALETTE[i % PALETTE.length],
+    borderWidth: 0,
+  }));
+  const ctx = document.getElementById(canvasId);
+  charts[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: rows, datasets },
+    options: barOptions(true, horizontal)
+  });
+}
+
+function renderTimeline(canvasId, arr) {
+  // group by month, separate by period
+  const byKey = {};
+  arr.forEach(d => {
+    if (!d.date) return;
+    const month = d.date.slice(0, 7);
+    const p = d.period || '-';
+    if (!byKey[p]) byKey[p] = {};
+    byKey[p][month] = (byKey[p][month] || 0) + 1;
+  });
+  // collect all months sorted
+  const allMonths = new Set();
+  Object.values(byKey).forEach(o => Object.keys(o).forEach(m => allMonths.add(m)));
+  const months = [...allMonths].sort();
+  const periods = Object.keys(byKey).sort();
+  const periodColors = { '第一期': COLORS.primary, '第二期': COLORS.yellow };
+  const datasets = periods.map((p, i) => ({
+    label: p,
+    type: 'bar',
+    data: months.map(m => byKey[p][m] || 0),
+    backgroundColor: periodColors[p] || PALETTE[i],
+    stack: 'monthly',
+  }));
+  // cumulative line
+  let cum = 0;
+  const cumData = months.map(m => {
+    const month_total = periods.reduce((s, p) => s + (byKey[p][m] || 0), 0);
+    cum += month_total;
+    return cum;
+  });
+  datasets.push({
+    label: '累計',
+    type: 'line',
+    data: cumData,
+    borderColor: COLORS.purple,
+    backgroundColor: 'rgba(124, 91, 255, 0.08)',
+    yAxisID: 'y1',
+    tension: 0.3,
+    pointRadius: 3,
+    pointBackgroundColor: COLORS.purple,
+    borderWidth: 2.5,
+    fill: false,
+  });
+
+  const ctx = document.getElementById(canvasId);
+  charts[canvasId] = new Chart(ctx, {
+    data: { labels: months, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { stacked: true, grid: { color: 'rgba(31, 42, 55, 0.06)' }, ticks: { color: '#4a5568' } },
+        y: { stacked: true, beginAtZero: true, position: 'left', title: { display: true, text: '月別件数', color: '#6b7a90' }, grid: { color: 'rgba(31, 42, 55, 0.06)' }, ticks: { color: '#4a5568' } },
+        y1: { beginAtZero: true, position: 'right', title: { display: true, text: '累計件数', color: '#6b7a90' }, grid: { drawOnChartArea: false }, ticks: { color: '#4a5568' } },
+      },
+      plugins: { legend: { position: 'bottom' }, datalabels: { display: false } }
+    }
+  });
+}
+
+function renderTopOrg(canvasId, arr) {
+  const m = countBy(arr, 'org');
+  const top = [...m.entries()].sort((a,b) => b[1] - a[1]).slice(0, 15);
+  // get listing info per org for color (use first occurrence)
+  const orgListing = {};
+  arr.forEach(d => { if (!orgListing[d.org]) orgListing[d.org] = d.listing; });
+  const labels = top.map(t => t[0]);
+  const values = top.map(t => t[1]);
+  const colors = labels.map(l => LISTING_COLOR[orgListing[l]] || COLORS.gray);
+
+  const ctx = document.getElementById(canvasId);
+  charts[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: '採択件数', data: values, backgroundColor: colors, borderWidth: 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      indexAxis: 'y',
+      scales: {
+        x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { grid: { display: false } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => `${ctx.parsed.x} 件 (${orgListing[ctx.label] || '-'})` } },
+        datalabels: { anchor: 'end', align: 'end', color: '#1f2a37', font: { size: 11, weight: 'bold' } }
+      }
+    }
+  });
+}
+
+// ============================
+// KPIs
+// ============================
+function renderKPIs(arr) {
+  const total = arr.length;
+  const uniqueOrgs = new Set(arr.map(d => d.org)).size;
+  const corporate = arr.filter(d => d.type === '民間企業');
+  const listedPct = corporate.length ? (corporate.filter(d => d.listing === '上場').length / corporate.length * 100) : 0;
+  const suPct = corporate.length ? (corporate.filter(d => d.listing === '宇宙SU').length / corporate.length * 100) : 0;
+  const newPct = corporate.length ? (corporate.filter(d => d.history === '新規').length / corporate.length * 100) : 0;
+  const universities = arr.filter(d => d.type === '大学').length;
+  const indep = arr.filter(d => d.type === '独立法人等').length;
+
+  const kpis = [
+    { label: '採択件数', value: total, delta: `ユニーク機関数 ${uniqueOrgs}` },
+    { label: '民間企業', value: corporate.length, delta: `${total ? (corporate.length/total*100).toFixed(0) : 0}%` },
+    { label: '大学', value: universities, delta: `${total ? (universities/total*100).toFixed(0) : 0}%` },
+    { label: '独立法人等', value: indep, delta: `${total ? (indep/total*100).toFixed(0) : 0}%` },
+    { label: '上場企業比率', value: listedPct.toFixed(0) + '%', delta: '民間企業内' },
+    { label: '宇宙SU比率', value: suPct.toFixed(0) + '%', delta: '民間企業内' },
+    { label: '新規参入比率', value: newPct.toFixed(0) + '%', delta: '民間企業内' },
+  ];
+  document.getElementById('kpis').innerHTML = kpis.map(k => `
+    <div class="kpi">
+      <div class="label">${k.label}</div>
+      <div class="value">${k.value}</div>
+      <div class="delta">${k.delta}</div>
+    </div>
+  `).join('');
+}
+
+// ============================
+// Table
+// ============================
+let sortState = { key: 'No.', asc: true };
+function badge(v, kind) {
+  if (!v || v === '-') return `<span class="badge b-dash">-</span>`;
+  const cls = { '上場': 'b-listed', '非上場': 'b-unlisted', '宇宙SU': 'b-su', '新規': 'b-new', '既存': 'b-existing' }[v] || 'b-dash';
+  return `<span class="badge ${cls}">${v}</span>`;
+}
+function renderTable(arr) {
+  const tbody = document.getElementById('tableBody');
+  if (!arr.length) {
+    tbody.innerHTML = '<tr><td colspan="11" class="no-data">該当データがありません</td></tr>';
+    return;
+  }
+  const key = sortState.key;
+  const sorted = [...arr].sort((a, b) => {
+    const av = a[mapKey(key)] ?? ''; const bv = b[mapKey(key)] ?? '';
+    if (av < bv) return sortState.asc ? -1 : 1;
+    if (av > bv) return sortState.asc ? 1 : -1;
+    return 0;
+  });
+  tbody.innerHTML = sorted.map(d => `
+    <tr>
+      <td>${d.no ?? ''}</td>
+      <td>${d.org ?? ''}</td>
+      <td>${d.type ?? ''}</td>
+      <td>${badge(d.history)}</td>
+      <td>${badge(d.listing)}</td>
+      <td>${d.period ?? ''}</td>
+      <td>${d.field ?? ''}</td>
+      <td>${d.ministry ?? ''}</td>
+      <td>${d.theme ?? ''}</td>
+      <td>${d.date ?? ''}</td>
+      <td>${d.pdf ? `<a class="pdf-link" href="${d.pdf}" target="_blank" rel="noopener">PDF</a>` : ''}</td>
+    </tr>
+  `).join('');
+}
+function mapKey(k) {
+  // ヘッダの key 名をデータプロパティへ変換
+  const map = {
+    'No.': 'no', '実施機関名(代表機関)': 'org', '機関種別': 'type', '宇宙参画歴': 'history',
+    '上場区分/宇宙SU': 'listing', '期': 'period', '分野': 'field', '担当省': 'ministry',
+    '技術開発テーマ名': 'theme', '採択日': 'date'
+  };
+  return map[k] || k;
+}
+document.querySelectorAll('#dataTable th[data-key]').forEach(th => {
+  th.addEventListener('click', () => {
+    const k = th.dataset.key;
+    if (sortState.key === k) sortState.asc = !sortState.asc;
+    else { sortState.key = k; sortState.asc = true; }
+    renderTable(getFiltered());
+  });
+});
+
+// ============================
+// メイン描画
+// ============================
+function refresh() {
+  destroyAll();
+  const filtered = getFiltered();
+  renderKPIs(filtered);
+
+  // 機関種別
+  renderPie('chartType', countBy(filtered, 'type'), { '民間企業': COLORS.primary, '大学': COLORS.yellow, '独立法人等': COLORS.purple, '-': COLORS.gray });
+  // 民間企業に絞った上場/参画歴
+  const corp = filtered.filter(d => d.type === '民間企業');
+  renderPie('chartListing', countBy(corp, 'listing'), LISTING_COLOR);
+  renderPie('chartHistory', countBy(corp, 'history'), HISTORY_COLOR);
+
+  // 分野 × 上場区分
+  const fields = [...new Set(filtered.map(d => d.field).filter(Boolean))];
+  const listings = ['上場', '非上場', '宇宙SU', '-'];
+  const fxl = crossTab(filtered, 'field', 'listing');
+  renderStackedBar('chartField', fields, listings, fxl, LISTING_COLOR);
+
+  // 担当省 × 分野
+  const ministries = [...new Set(filtered.map(d => d.ministry).filter(Boolean))];
+  const mxf = crossTab(filtered, 'ministry', 'field');
+  renderStackedBar('chartMinistry', ministries, fields, mxf, FIELD_COLOR);
+
+  // タイムライン
+  renderTimeline('chartTimeline', filtered);
+
+  // 分野 × 参画歴 (民間)
+  const fxh = crossTab(corp, 'field', 'history');
+  const histories = ['新規', '既存', '-'];
+  renderStackedBar('chartFieldHistory', fields, histories, fxh, HISTORY_COLOR);
+
+  // 分野 × 上場区分 (民間)
+  const fxl2 = crossTab(corp, 'field', 'listing');
+  renderStackedBar('chartFieldListing', fields, listings, fxl2, LISTING_COLOR);
+
+  // 採択回数の多い機関
+  renderTopOrg('chartTopOrg', filtered);
+
+  // テーブル
+  renderTable(filtered);
+
+  // フッター
+  document.getElementById('totalCount').textContent = filtered.length;
+  const dates = filtered.map(d => d.date).filter(Boolean).sort();
+  document.getElementById('lastDate').textContent = dates.length ? dates[dates.length - 1] : '-';
+}
+
+refresh();
+</script>
+</body>
+</html>
