@@ -69,7 +69,7 @@ git push -u origin main
 
 ## データ出典
 
-- [JAXA 宇宙戦略基金](https://fund.jaxa.jp/)
+- [JAXA 宇宙戦略基金](https://fund.jaxa.jp/)の採択結果をもとに、分類は作成者によって振り分け
 
 ## ライセンス
 
